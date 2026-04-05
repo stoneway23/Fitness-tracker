@@ -380,9 +380,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(r => console.log('SW: FORGE registrado'))
-        .catch(e => console.log('SW error', e));
+      navigator.serviceWorker.register('./sw.js').catch(()=>{});
     });
   }
 </script>
@@ -557,6 +555,38 @@
     </div>
   </div>
 
+
+  <!-- ═══ SETTINGS SCREEN ═══ -->
+  <div class="screen" id="screenSettings">
+    <div class="scroll-area">
+      <div class="section-title">AJUSTES</div>
+      <div class="section-sub">Configuración de la app</div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">⚠️ Zona de peligro</div>
+        </div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+          Esta acción borrará todo tu historial, récords personales y estadísticas. No se puede deshacer.
+        </p>
+        <button class="btn btn-danger btn-full" onclick="confirmReset()">
+          🗑️ Reiniciar todo el progreso
+        </button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">ℹ️ Acerca de</div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8">
+          <div>Versión: <span style="color:var(--accent)">2.0</span></div>
+          <div>Entrenamiento: <span style="color:var(--accent)">PPL — Casa</span></div>
+          <div>Equipo: <span style="color:var(--accent)">Mancuernas · Barra · Paralelas · Bandas</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="nav-item active" onclick="showScreen('Home',this)">
@@ -578,6 +608,10 @@
     <button class="nav-item" onclick="showScreen('History',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Historial
+    </button>
+    <button class="nav-item" onclick="showScreen('Settings',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Ajustes
     </button>
   </nav>
 </div>
@@ -606,6 +640,14 @@
   </div>
 </div>
 
+<!-- WORKOUT CONFIRM MODAL -->
+<div class="modal" id="workoutConfirmModal" onclick="closeConfirmModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div id="confirmContent"></div>
+  </div>
+</div>
+
 <!-- PR TOAST -->
 <div class="pr-toast" id="prToast">🏆 ¡NUEVO RÉCORD PERSONAL!</div>
 
@@ -629,6 +671,9 @@ const EXERCISES_DB = [
   { id:'curl',         name:'Curl bíceps',        icon:'💪',  cat:'brazos',   muscles:['Bíceps','Braquial'],                   eq:'mancuernas',    diff:'principiante', desc:'Mantén los codos pegados al cuerpo. Sube las mancuernas rotando las muñecas.' },
   { id:'hammercurl',   name:'Curl martillo',      icon:'🔨',  cat:'brazos',   muscles:['Bíceps','Braquial','Braquiorradial'], eq:'mancuernas',    diff:'principiante', desc:'Agarre neutro (pulgares arriba). Trabaja el braquial y braquiorradial.' },
   { id:'bandhang',     name:'Dead Hang',          icon:'🤲',  cat:'espalda',  muscles:['Agarre','Dorsal','Hombros'],           eq:'barra',         diff:'principiante', desc:'Cuélgate de la barra con brazos extendidos. Excelente para hombros y fuerza de agarre.' },
+  { id:'negpullup',    name:'Dominadas Negativas', icon:'⬇️', cat:'espalda',  muscles:['Dorsal','Bíceps','Romboides'],         eq:'barra',         diff:'intermedio',   desc:'Sube con ayuda o desde cajón hasta mentón sobre barra, luego baja MUY lento (4-6 seg). Construye fuerza excéntrica para tu primera dominada.' },
+  { id:'isopullup',    name:'Dominadas Isométricas',icon:'⏸️', cat:'espalda', muscles:['Dorsal','Bíceps','Core'],              eq:'barra',         diff:'intermedio',   desc:'Mantén el mentón sobre la barra el mayor tiempo posible. Mide en segundos. Excelente para fuerza de agarre y resistencia.' },
+  { id:'scapullup',    name:'Dominadas Escapulares',icon:'🔃', cat:'espalda', muscles:['Trapecios','Serrato','Romboides'],     eq:'barra',         diff:'principiante', desc:'Colgado de la barra con brazos rectos. Sin doblar codos, eleva los hombros retrayendo las escápulas. Activa el serrato y estabilizadores.' },
   // LEGS
   { id:'squat',        name:'Sentadilla',         icon:'🦵',  cat:'piernas',  muscles:['Cuádriceps','Glúteos','Isquios'],      eq:'peso corporal', diff:'principiante', desc:'Pies separados al ancho de hombros. Baja hasta que los muslos estén paralelos al suelo.' },
   { id:'lunge',        name:'Zancada',            icon:'🚶',  cat:'piernas',  muscles:['Cuádriceps','Glúteos'],                eq:'mancuernas',    diff:'principiante', desc:'Un paso adelante, baja la rodilla trasera casi al suelo. Alterna piernas.' },
@@ -647,7 +692,7 @@ const WORKOUT_TEMPLATES = {
   },
   pull: {
     name: 'JALÓN (Pull)',
-    exercises: ['pullup','chinup','row','facepull','curl','hammercurl']
+    exercises: ['pullup','negpullup','isopullup','scapullup','chinup','row','facepull','curl','hammercurl']
   },
   legs: {
     name: 'PIERNAS (Legs)',
@@ -731,6 +776,49 @@ function showScreen(name, btn) {
 // WORKOUT
 // ═══════════════════════════════════════
 function startWorkout(type) {
+  const template = WORKOUT_TEMPLATES[type];
+  const exCount = template.exercises.length;
+  const estTime = type === 'legs' ? 38 : type === 'push' ? 45 : 42;
+
+  const typeColors = { push:'var(--accent)', pull:'var(--accent2)', legs:'var(--green)', custom:'var(--accent)' };
+  const typeIcons  = { push:'💥', pull:'🔝', legs:'🦵', custom:'⚙️' };
+
+  document.getElementById('confirmContent').innerHTML = `
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:56px;margin-bottom:8px">${typeIcons[type]}</div>
+      <div class="modal-title">${template.name}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px">¿Listo para entrenar?</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:${typeColors[type]};font-family:var(--font-mono)">${exCount}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">ejercicios</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:${typeColors[type]};font-family:var(--font-mono)">~${estTime}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">minutos</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:${typeColors[type]};font-family:var(--font-mono)">🏠</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">casa</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeConfirmModal({target:document.getElementById('workoutConfirmModal')})">Cancelar</button>
+      <button class="btn btn-primary" style="flex:2" onclick="confirmStartWorkout('${type}')">⚡ ¡Empezar ya!</button>
+    </div>
+  `;
+  document.getElementById('workoutConfirmModal').style.display = 'flex';
+}
+
+function closeConfirmModal(e) {
+  if (e.target === e.currentTarget || e.target === document.getElementById('workoutConfirmModal')) {
+    document.getElementById('workoutConfirmModal').style.display = 'none';
+  }
+}
+
+function confirmStartWorkout(type) {
+  document.getElementById('workoutConfirmModal').style.display = 'none';
   currentWorkoutType = type;
   const template = WORKOUT_TEMPLATES[type];
   document.getElementById('workoutTypeLbl').textContent = template.name;
@@ -749,45 +837,53 @@ function startWorkout(type) {
   const area = document.getElementById('workoutExercises');
   area.innerHTML = template.exercises.map(id => {
     const ex = EXERCISES_DB.find(e => e.id === id);
-    return renderWorkoutExercise(ex);
+    return ex ? renderWorkoutExercise(ex) : '';
   }).join('');
 
-  // Attach set done handlers
-  area.querySelectorAll('.set-done-btn').forEach(btn => {
-    btn.addEventListener('click', onSetDone);
-  });
-  area.querySelectorAll('.add-set-btn').forEach(btn => {
-    btn.addEventListener('click', onAddSet);
-  });
-  area.querySelectorAll('.exercise-header').forEach(h => {
-    h.addEventListener('click', toggleExercise);
-  });
+  // Attach handlers
+  area.querySelectorAll('.set-done-btn').forEach(btn => btn.addEventListener('click', onSetDone));
+  area.querySelectorAll('.add-set-btn').forEach(btn => btn.addEventListener('click', onAddSet));
+  area.querySelectorAll('.exercise-header').forEach(h => h.addEventListener('click', toggleExercise));
 
-  // Show workout tab
   const workoutNavBtn = document.querySelector('.nav-item:nth-child(2)');
   showScreen('Workout', workoutNavBtn);
 }
 
+const ISOMETRIC_EXERCISES = ['isopullup', 'plank', 'bandhang'];
+
 function renderWorkoutExercise(ex) {
+  const isIso = ISOMETRIC_EXERCISES.includes(ex.id);
+  const header = isIso
+    ? '<div>Set</div><div>Seg</div><div>—</div><div>Tiempo</div><div>✓</div>'
+    : '<div>Set</div><div>Reps</div><div>Kg</div><div>Vol</div><div>✓</div>';
   return `
-  <div class="exercise-item slide-up" data-ex="${ex.id}">
+  <div class="exercise-item slide-up" data-ex="${ex.id}" data-iso="${isIso}">
     <div class="exercise-header">
       <div class="exercise-icon" style="background:var(--surface2)">${ex.icon}</div>
       <div class="exercise-info">
         <div class="exercise-name">${ex.name}</div>
-        <div class="exercise-meta">${ex.muscles.slice(0,2).join(' · ')} · ${ex.eq}</div>
+        <div class="exercise-meta">${ex.muscles.slice(0,2).join(' · ')} · ${isIso ? '⏱ tiempo' : ex.eq}</div>
       </div>
       <svg class="exercise-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
     <div class="sets-area" style="display:none">
-      <div class="sets-header"><div>Set</div><div>Reps</div><div>Kg</div><div>Vol</div><div>✓</div></div>
-      ${[1,2,3].map(i => renderSetRow(i)).join('')}
+      <div class="sets-header">${header}</div>
+      ${[1,2,3].map(i => renderSetRow(i, isIso)).join('')}
       <button class="add-set-btn">+ Añadir serie</button>
     </div>
   </div>`;
 }
 
-function renderSetRow(num) {
+function renderSetRow(num, isIso = false) {
+  if (isIso) {
+    return `
+  <div class="set-row" data-iso="true">
+    <div class="set-num">${num}</div>
+    <input class="set-input" type="number" placeholder="30" value="" min="1" max="999" style="grid-column:span 1">
+    <div class="set-vol" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;grid-column:span 2">seg</div>
+    <div class="set-done-btn">✓</div>
+  </div>`;
+  }
   return `
   <div class="set-row">
     <div class="set-num">${num}</div>
@@ -811,24 +907,32 @@ function onSetDone(e) {
   const btn = e.currentTarget;
   const row = btn.closest('.set-row');
   const num = row.querySelector('.set-num');
-  const repsInput = row.querySelectorAll('.set-input')[0];
-  const kgInput = row.querySelectorAll('.set-input')[1];
   const volCell = row.querySelector('.set-vol');
-
-  const reps = parseFloat(repsInput.value) || 0;
-  const kg = parseFloat(kgInput.value) || 0;
-  const setVol = reps * (kg || 1);
+  const isIso = row.dataset.iso === 'true';
 
   if (!btn.classList.contains('done')) {
     btn.classList.add('done');
     num.classList.add('done');
     btn.textContent = '✓';
-    totalVolume += setVol;
-    volCell.textContent = kg ? `${setVol}kg` : `${reps}r`;
-    volCell.style.color = 'var(--green)';
-    updateVolDisplay();
-    startRestTimer(60);
-    // Check for PR (random chance for demo)
+
+    if (isIso) {
+      const secsInput = row.querySelectorAll('.set-input')[0];
+      const secs = parseFloat(secsInput.value) || 0;
+      volCell.textContent = secs ? `${secs}s` : '—';
+      volCell.style.color = 'var(--green)';
+      startRestTimer(30);
+    } else {
+      const repsInput = row.querySelectorAll('.set-input')[0];
+      const kgInput = row.querySelectorAll('.set-input')[1];
+      const reps = parseFloat(repsInput.value) || 0;
+      const kg = parseFloat(kgInput.value) || 0;
+      const setVol = reps * (kg || 1);
+      totalVolume += setVol;
+      volCell.textContent = kg ? `${setVol}kg` : `${reps}r`;
+      volCell.style.color = 'var(--green)';
+      updateVolDisplay();
+      startRestTimer(60);
+    }
     if (Math.random() > 0.85) showPRToast();
   }
 }
@@ -836,10 +940,12 @@ function onSetDone(e) {
 function onAddSet(e) {
   const btn = e.currentTarget;
   const setsArea = btn.closest('.sets-area');
+  const exerciseItem = setsArea.closest('.exercise-item');
+  const isIso = exerciseItem.dataset.iso === 'true';
   const existingSets = setsArea.querySelectorAll('.set-row');
   const newNum = existingSets.length + 1;
   const div = document.createElement('div');
-  div.innerHTML = renderSetRow(newNum);
+  div.innerHTML = renderSetRow(newNum, isIso);
   const newRow = div.firstElementChild;
   newRow.querySelector('.set-done-btn').addEventListener('click', onSetDone);
   setsArea.insertBefore(newRow, btn);
@@ -1044,6 +1150,33 @@ function repeatWorkout(idx) {
 // ═══════════════════════════════════════
 // PR TOAST
 // ═══════════════════════════════════════
+function confirmReset() {
+  if (confirm('⚠️ ¿Seguro que quieres borrar todo el progreso?\nEsta acción NO se puede deshacer.')) {
+    // Reset stats
+    document.getElementById('statWorkouts').textContent = '0';
+    document.getElementById('statVolume').textContent = '0';
+    document.getElementById('statPRs').textContent = '0';
+    document.getElementById('streakCount').textContent = '0';
+    // Reset week grid
+    const grid = document.getElementById('weekGrid');
+    grid.querySelectorAll('.week-day').forEach(d => {
+      d.classList.remove('done');
+      d.innerHTML = d.innerHTML.replace('✓','');
+    });
+    // Reset history
+    HISTORY_DATA.length = 0;
+    renderHistory();
+    // Reset PRs
+    PERSONAL_RECORDS.length = 0;
+    renderProgress();
+    // Show confirmation
+    alert('✅ Progreso reiniciado. ¡Empieza desde cero, Dante!');
+    // Go back to home
+    const homeBtn = document.querySelector('.nav-item:nth-child(1)');
+    showScreen('Home', homeBtn);
+  }
+}
+
 function showPRToast() {
   const toast = document.getElementById('prToast');
   toast.classList.add('show');
